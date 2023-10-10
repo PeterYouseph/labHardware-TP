@@ -1,51 +1,45 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+use ieee.std_logic_misc.all;
 
 entity codec is
   port
   (
-    clk      : in std_logic;
-    reset    : in std_logic;
-    data_in  : in std_logic_vector(7 downto 0);
-    data_out : out std_logic_vector(7 downto 0);
-    encode   : in std_logic;
-    decode   : in std_logic
+    interrupt      : in std_logic; -- Interrupt signal - Sinal de interrupção
+    read_signal    : in std_logic; -- Read signal - Leitura de sinal
+    write_signal   : in std_logic; -- Write signal - Escrita de sinal
+    valid          : out std_logic; -- Valid signal - Sinal válido
+    codec_data_in  : in std_logic_vector(7 downto 0); -- Byte written to codec - Byte escrito no codec
+    codec_data_out : out std_logic_vector(7 downto 0) -- Byte read from codec - Byte lido pelo codec
   );
 end entity codec;
 
-architecture rtl of codec is
-  signal reg_data : std_logic_vector(7 downto 0);
+architecture behavioral of codec is
+  signal data_buffer   : std_logic_vector(7 downto 0) := (others => '0'); -- Data buffer to hold the byte read from/written to codec - Buffer de dados para armazenar o byte lido / escrito no codec
+  signal is_data_valid : boolean                      := false; -- Flag to indicate whether data is valid or not - Flag de indicação se os dados são válidos ou não
 begin
-  process (clk, reset)
+  process (interrupt, read_signal, write_signal, codec_data_in)
   begin
-    if reset = '1' then
-      reg_data <= (others => '0');
-    elsif rising_edge(clk) then
-      if encode = '1' then
-        -- encode data
-        case reg_data is
-          when "00000000" =>
-            data_out <= "00110000"; -- '0'
-          when "00000001" =>
-            data_out <= "00110001"; -- '1'
-            -- add more cases for other ASCII characters
-          when others =>
-            data_out <= "00000000"; -- invalid character
-        end case;
-      elsif decode = '1' then
-        -- decode data
-        case data_in is
-          when "00110000" =>
-            reg_data <= "00000000"; -- '0'
-          when "00110001" =>
-            reg_data <= "00000001"; -- '1'
-            -- add more cases for other ASCII characters
-          when others =>
-            reg_data <= "00000000"; -- invalid character
-        end case;
-        data_out <= reg_data;
+    if interrupt = '1' then
+      if read_signal = '1' then
+        -- Instruction is IN, read a byte from the simulated input device - Se instrução é IN, leia um byte do dispositivo de entrada simulado
+        -- data_buffer   <= "FALTA ADICIONAR A LÓGICA DE LEITURA DOS ARQUIVOS";
+        is_data_valid <= true; -- Signal that valid data is available - Sinal is_data_valid que dados válidos estão disponíveis
+      elsif write_signal = '1' then
+        -- Instruction is OUT, write a byte to the simulated output device - Se instrução é OUT, escreva um byte
+        -- Extract the data to be written from codec_data_in - Extraia os dados a serem gravados de codec_data_in
+        data_buffer   <= codec_data_in;
+        is_data_valid <= true; -- Signal that data has been written successfully - Sinal is_data_valid que os dados foram gravados com sucesso
       end if;
+    else
+      is_data_valid <= false; -- No valid data available - Nenhum dado válido disponível
     end if;
   end process;
-end architecture rtl;
+
+  valid <= '1' when is_data_valid else
+    '0'; -- Set valid signal based on is_data_valid flag - Define o sinal válido com base na flag do is_data_valid
+
+  -- Output the data in data_buffer when valid = '1' - Dados de saída no data_buffer quando valid = '1'
+  codec_data_out <= data_buffer when is_data_valid else
+    (others => 'Z');
+end architecture behavioral;
