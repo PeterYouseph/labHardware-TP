@@ -1,6 +1,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_misc.all;
+use ieee.std_logic_textio.all;
+
 
 entity codec is
   port
@@ -18,59 +20,48 @@ architecture behavioral of codec is
   signal data_buffer   : std_logic_vector(7 downto 0) := (others => '0'); -- Data buffer to hold the byte read from/written to codec - Buffer de dados para armazenar o byte lido / escrito no codec
   signal is_data_valid : boolean                      := false; -- Flag to indicate whether data is valid or not - Flag de indicação se os dados são válidos ou não
 
-  -- File variables
-  file input_file : file of bit;
-  file output_file : file of bit;
-  variable byte_buffer : bit_vector(7 downto 0);
-  
+  --file variables
+  type file_type is file of bit;
+  file input_file : file_type open read_mode is "input.txt";
+  file output_file : file_type open write_mode is "output.txt";
 
 begin
+
   process (interrupt, read_signal, write_signal, codec_data_in)
+    variable byte_count  : integer                      := 0; -- Variable to count the number of bytes read/written - Variável para contar o número de bytes lidos / escritos
+  
   begin
+
     if interrupt = '1' then
-      if read_signal = '1' then
-        -- Instruction is IN, read a byte from the simulated input device
 
-        if file_open(input_file, "path_to_input_file.bin", READ_MODE) = STATUS_OK then -- Open the file
-          
-          while not endfile(input_file) loop -- Loop until the end of the file
-            read(input_file, byte_buffer); -- Read a byte
-            data_buffer <= std_logic_vector(byte_buffer); -- Assign the byte_buffer to data_buffer
-            is_data_valid <= true; -- Signal that valid data is available - Sinal que dados validos
-          end loop;
-          file_close(input_file); -- Close the file
-
-        else
-          is_data_valid <= false; -- Signal that no valid data is available - Sinal que não existem dados válidos disponíveis
+      if read_signal = '1' then -- Instruction is IN, read a byte from the simulated input device - Se a instrução é IN, leia um byte do dispositivo de entrada simulado
+        while not endfile(input_file) loop 
+          read(input_file, data_buffer(byte_count)); 
+          byte_count := byte_count + 1;
+        end loop;
+        if endfile(input_file) then
+          close(input_file);
         end if;
+        -- Write the data to be read to codec_data_out - Escreva os dados a serem lidos em codec_data_out
+        codec_data_out <= data_buffer;
+        is_data_valid <= true; -- Signal that valid data is available - Sinal is_data_valid que dados válidos estão disponíveis
 
-      elsif write_signal = '1' then
+      elsif write_signal = '1' then -- Instruction is OUT, write a byte to the simulated output device - Se a instrução é OUT, escreva um byte no dispositivo de saída simulado
 
-        -- Instruction is OUT, write a byte to the simulated output device
-        data_buffer <= codec_data_in; -- Convert the data_buffer to a bit vector
-        if file_open(output_file, "path_to_output_file.bin", WRITE_MODE) = STATUS_OK then -- Open the file
-
-          while write_signal = '1' loop -- Loop until the write signal is high
-            byte_buffer := bit_vector(codec_data_in); -- Convert the data_buffer to a bit vector
-            write(output_file, byte_buffer); -- Write the byte
-            is_data_valid <= true; -- Signal that valid data is available - Sinal que dados validos s
-
-          end loop;
-          file_close(output_file); -- Close the file
-
-        else
-          is_data_valid <= false; -- Signal that no valid data is available - Sinal que nao existem dados disponíveis
+        data_buffer   <= codec_data_in; -- Write the data to be written to codec_data_in - Escreva os dados a serem gravados em codec_data_in
+        for i in 0 to 7 loop
+          write(output_file, data_buffer(i));
+        end loop;
+        is_data_valid <= true; -- Signal that data has been written successfully - Sinal is_data_valid que os dados foram gravados com sucesso
+        if byte_count = 8 then
+          close(output_file);
         end if;
       end if;
+
     else
       is_data_valid <= false; -- No valid data available - Nenhum dado válido disponível
     end if;
   end process;
-
-  valid <= '1' when is_data_valid else
-    '0'; -- Set valid signal based on is_data_valid flag - Define o sinal válido com base na flag do is_data_valid
-
-  -- Output the data in data_buffer when valid = '1' - Dados de saída no data_buffer quando valid = '1'
-  codec_data_out <= data_buffer when is_data_valid else
-    (others => 'Z');
+  valid <= '1' when is_data_valid = true else '0'; -- Set valid signal - Sinal válido
+  
 end architecture behavioral;
