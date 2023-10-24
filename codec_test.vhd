@@ -29,7 +29,7 @@ architecture testbench of codec_test is
 begin
 
   -- Connect the signals
-  UUT : codec port map
+  unit_tests : codec port map
   (
     interrupt      => interrupt,
     read_signal    => read_signal,

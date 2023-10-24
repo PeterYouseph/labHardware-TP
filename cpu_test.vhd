@@ -64,7 +64,7 @@ architecture testbench of cpu_test is
   signal codec_data_in    : std_logic_vector(7 downto 0);
 
 begin
-  uut : cpu
+  unit_tests : cpu
   generic
   map
   (

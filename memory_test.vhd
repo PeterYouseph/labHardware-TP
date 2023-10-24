@@ -31,7 +31,7 @@ architecture testbench of memory_test is
   signal data_out   : std_logic_vector(31 downto 0);
 
 begin
-  uut : memory
+  unit_tests : memory
   generic
   map
   (
