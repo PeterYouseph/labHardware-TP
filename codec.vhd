@@ -1,7 +1,7 @@
-use STD.textio.all;
+use std.textio.all;
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_misc.all;
+use ieee.numeric_std.all;
 
 entity codec is
   port
@@ -16,72 +16,41 @@ entity codec is
 end entity codec;
 
 architecture behavioral of codec is
-  signal data_buffer   : std_logic_vector(7 downto 0) := (others => '0'); -- Data buffer to store the byte read/written to the codec
-  signal is_data_valid : boolean                      := false; -- Flag indicating whether the data is valid or not
-
-  -- File variables
-  file input_file  : text open read_mode is "input.txt";
-  file output_file : text open write_mode is "output.txt";
-
-  shared variable bin_string   : line; -- Variable to store the binary string to be written to the output file
-  shared variable read_status  : file_open_status;
-  shared variable write_status : file_open_status;
-
+  signal data_buffer        : std_logic_vector(7 downto 0) := (others => '0');
+  signal is_data_valid      : boolean                      := false;
+  file input_file           : text open READ_MODE is "input.bin";
+  shared variable file_line : line;
+  shared variable file_data : integer := 0;
+  shared variable file_sum  : integer := 0;
 begin
-
   process (interrupt, read_signal, write_signal, codec_data_in)
   begin
     if interrupt = '1' then
-      if read_signal = '1' then -- If the instruction is IN, read a byte from the simulated input device
-        read_status := file_open(input_file, read_mode);
-        readline(input_file, bin_string); -- Read the binary string from the input file
+      if read_signal = '1' then
+        if not is_data_valid then
+          -- Read from file
+          if not endfile(input_file) then
+            readline(input_file, file_line);
+            read(file_line, file_data);
+            file_sum := file_sum + file_data;
+          end if;
 
-        for i in codec_data_out'range loop
-          data_buffer(i) <= std_logic'val(to_integer(unsigned(bin_string.all(i + 1))))(0); -- Convert the binary string to a byte
-        end loop;
-
-        if read_status /= file_open_status'openok then
-          report "Error: Failed to open input file";
-          assert false;
+          if endfile(input_file) then
+            data_buffer   <= std_logic_vector(to_unsigned(file_sum, 8));
+            is_data_valid <= true;
+          end if;
         end if;
-
-        if endfile(input_file) then -- If the input file reaches the end, close it and open it again
-          file_close(input_file);
-          read_status := file_open(input_file, read_mode);
-        end if;
-
-        -- Write the data to be read into codec_data_out
-        codec_data_out <= data_buffer;
-        is_data_valid  <= true; -- Signal that valid data is available
-
-      elsif write_signal = '1' then -- If the instruction is OUT, write a byte to the simulated output device
-        write_status := file_open(output_file, write_mode);
-
-        for i in codec_data_in'range loop
-          write(output_file, std_logic'image(codec_data_in(i))(5)); -- Convert the byte to a binary string
-        end loop;
-
-        writeline(output_file); -- Write a newline character
-        data_buffer   <= codec_data_in;
-        is_data_valid <= true; -- Signal that valid data is available
-
-        if write_status /= file_open_status'openok then
-          report "Error: Failed to open output file";
-          assert false;
-        end if;
-
-        if endfile(output_file) then -- If the output file reaches the end, close it and open it again
-          file_close(output_file);
-          write_status := file_open(output_file, write_mode);
+      elsif write_signal = '1' then
+        if not is_data_valid then
+          data_buffer   <= codec_data_in;
+          is_data_valid <= true;
         end if;
       end if;
     end if;
-  end process;
 
-  process (is_data_valid) -- Process which verifies if the signal valid indicates whether valid data is available or not
-  begin
     if is_data_valid then
-      valid <= '1';
+      codec_data_out <= data_buffer;
+      valid          <= '1';
     else
       valid <= '0';
     end if;
