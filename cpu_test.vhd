@@ -2,10 +2,10 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity cpu_tb is
-end entity cpu_tb;
+entity cpu_test is
+end entity cpu_test;
 
-architecture testbench of cpu_tb is
+architecture testbench of cpu_test is
   component cpu is
     generic
     (

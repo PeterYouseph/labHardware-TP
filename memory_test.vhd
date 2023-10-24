@@ -2,10 +2,10 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity memory_tb is
-end entity memory_tb;
+entity memory_test is
+end entity memory_test;
 
-architecture testbench of memory_tb is
+architecture testbench of memory_test is
   component memory is
     generic
     (

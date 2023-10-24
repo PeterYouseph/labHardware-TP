@@ -1,10 +1,10 @@
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
+library ieee;
+use ieee.std_logic_1164.all;
 
-entity tb_codec is
-end tb_codec;
+entity codec_test is
+end codec_test;
 
-architecture testbench of tb_codec is
+architecture testbench of codec_test is
 
   signal interrupt      : std_logic := '0';
   signal read_signal    : std_logic := '0';
@@ -12,7 +12,7 @@ architecture testbench of tb_codec is
   signal valid          : std_logic;
   signal codec_data_in  : std_logic_vector(7 downto 0) := (others => '0');
   signal codec_data_out : std_logic_vector(7 downto 0);
-  
+
   -- Instantiate the codec component
   component codec
     port
@@ -29,7 +29,8 @@ architecture testbench of tb_codec is
 begin
 
   -- Connect the signals
-  UUT: codec port map (
+  UUT : codec port map
+  (
     interrupt      => interrupt,
     read_signal    => read_signal,
     write_signal   => write_signal,
@@ -42,23 +43,23 @@ begin
   process
   begin
     -- Activate interrupt signal
-    interrupt <= '1'; 
+    interrupt <= '1';
 
     -- Activate write signal
-    write_signal   <= '1';
-    codec_data_in  <= "11001100"; -- Example data
-    
+    write_signal  <= '1';
+    codec_data_in <= "11001100"; -- Example data
+
     wait for 10 ns; -- Simulate some time
-    
+
     -- Reset write signal and data
-    write_signal   <= '0';
-    codec_data_in  <= (others => '0');
-    
+    write_signal  <= '0';
+    codec_data_in <= (others => '0');
+
     -- Check if valid is asserted
     assert valid = '1'
-      report "Write operation failed: valid signal not asserted"
+    report "Write operation failed: valid signal not asserted"
       severity error;
-      
+
     wait;
   end process;
 
@@ -67,17 +68,17 @@ begin
   begin
     -- Activate interrupt signal
     interrupt <= '1';
-    
+
     -- Activate read signal
-    read_signal    <= '1';
-    
+    read_signal <= '1';
+
     wait for 10 ns; -- Simulate some time
-    
+
     -- Check if valid is asserted
     assert valid = '1'
-      report "Read operation failed: valid signal not asserted"
+    report "Read operation failed: valid signal not asserted"
       severity error;
-      
+
     wait;
   end process;
 
