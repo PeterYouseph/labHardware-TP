@@ -26,6 +26,7 @@ architecture behavioral of codec is
 
 begin
   process (interrupt, read_signal, write_signal, codec_data_in)
+    variable cont : integer := 0;
   begin
     if interrupt = '1' then
       if read_signal = '1' then
@@ -45,13 +46,15 @@ begin
       elsif write_signal = '1' then
         -- Write to file
         if not is_data_valid then
-          writeline(output_file, file_line);
-          write(file_line, to_integer(unsigned(codec_data_in)));
-        end if;
-        
-        if endfile(output_file) then 
-          data_buffer   <= codec_data_in;
-          is_data_valid <= true;
+          for cont in 0 to 7 loop
+            write(output_file, to_integer(unsigned(codec_data_in(i)));
+          end loop;
+          --writeline(output_file, file_line);
+          --write(file_line, to_integer(unsigned(codec_data_in)));
+          if endfile(output_file) then 
+            data_buffer   <= codec_data_in;
+            is_data_valid <= true;
+          end if;
         end if;
       end if;
     end if;
