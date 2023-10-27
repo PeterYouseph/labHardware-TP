@@ -1,3 +1,12 @@
+-- Declaração da entidade: A entidade memory é declarada com vários sinais de entrada e saída. Esses sinais incluem o sinal de clock, sinais para leitura e escrita de dados na memória, sinais para endereços de dados na memória, e sinais para dados de entrada e saída da memória.
+
+-- Declaração da arquitetura: A arquitetura comportamental da memory é declarada. Isso inclui a declaração de um tipo de array memory_array que será usado para armazenar os dados na memória, e um sinal mem que será a memória.
+
+-- Processo: Um processo é iniciado que é sensível ao sinal de clock. Dentro deste processo:
+
+-- Se o sinal de clock estiver na borda de descida:
+-- Se o sinal de escrita de dados for ‘1’, os dados são escritos na memória no endereço especificado.
+-- Se o sinal de leitura de dados for ‘1’, os dados são lidos da memória no endereço especificado.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
