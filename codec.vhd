@@ -8,6 +8,7 @@
 -- Se o sinal de leitura for ‘1’ e os dados no buffer não forem válidos, o script lê do arquivo de entrada e calcula a soma dos dados do arquivo.
 -- Se o sinal de escrita for ‘1’ e os dados no buffer não forem válidos, o script escreve cada bit no byte no arquivo de saída.
 -- Se os dados no buffer forem válidos, os dados lidos do codec são definidos como os dados no buffer e o sinal válido é definido como ‘1’. Caso contrário, o sinal válido é definido como ‘0’.
+
 library ieee; -- Importa a biblioteca padrão IEEE
 use ieee.std_logic_1164.all; -- Usa o pacote std_logic_1164 da biblioteca IEEE
 use ieee.numeric_std.all; -- Usa o pacote numeric_std da biblioteca IEEE

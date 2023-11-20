@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
 entity cpu is
   generic
   (
@@ -43,76 +44,110 @@ entity cpu is
 end entity;
 
 architecture behavioral of cpu is
-  signal ip    : std_logic_vector(addr_width - 1 downto 0); -- Instruction Pointer
-  signal sp    : unsigned(addr_width - 1 downto 0); -- Stack Pointer
-  signal stack : std_logic_vector((data_width * 4) - 1 downto 0); -- Stack memory
 
-  -- Temporary registers for instruction decoding and execution
-  signal opcode             : std_logic_vector(3 downto 0);
-  signal imm                : std_logic_vector(data_width - 1 downto 0);
-  signal op1, op2, op3      : std_logic_vector(data_width - 1 downto 0);
-  signal continue_execution : boolean; -- Variável de controle
+  signal ip            : std_logic_vector(addr_width - 1 downto 0); -- Instruction Pointer
+  signal sp            : unsigned(addr_width - 1 downto 0); -- Stack Pointer
+  signal stack         : std_logic_vector((data_width * 4) - 1 downto 0); -- Stack memory
+  signal opcode        : std_logic_vector(3 downto 0);
+  signal imm           : std_logic_vector(data_width - 1 downto 0);
+  signal op1, op2, op3 : std_logic_vector(data_width - 1 downto 0);
+  signal stack_top     : std_logic_vector(data_width - 1 downto 0); -- Topo da pilha
+  signal halted        : std_logic; -- Variável de controle
 
 begin
   process (clock)
   begin
+    halted <= halt;
     if rising_edge(clock) then
-      if halt = '0' then
-        -- Fetch instruction from IMEM using ip
+      if halted = '0' then
         instruction_addr <= ip;
         mem_data_read    <= '1';
+        opcode           <= instruction_in(7 downto 4);
+        imm              <= instruction_in(3 downto 0);
 
-        -- Decode instruction (opcode and immediate value)
-        opcode <= instruction_in(7 downto 4);
-        imm    <= instruction_in(3 downto 0);
-
-        -- Implement instruction execution based on opcode
         case opcode is
           when "0000" => -- HLT
-            -- Implement halt logic
-            -- Para parar o processador, você pode desativar o clock, que impedirá que o processador continue executando instruções.
-            if halt = '1' then
-              continue_execution <= false;
-            end if;
-
+            halted <= '1';
           when "0001" => -- IN
-            codec_read <= '1'; -- Solicitar leitura do codec
+            codec_read <= '1';
           when "0010" => -- OUT
-            codec_write <= '1'; -- Solicitar escrita no codec
+            codec_write <= '1';
           when "0011" => -- PUSHIP
-            -- Implement PUSHIP logic
             stack(to_integer(sp) - 1 downto to_integer(sp) - 2) <= ip;
-            sp                                                  <= sp - to_unsigned(2, addr_width); -- Subtrai 2 da pilha
+            sp                                                  <= sp - to_unsigned(2, addr_width);
           when "0100" => -- PUSH imm
-            -- Implement PUSH immediate value logic
             stack(to_integer(sp) - 1 downto to_integer(sp) - 2) <= imm;
-            sp                                                  <= sp - to_unsigned(2, addr_width); -- Subtrai 2 da pilha
+            sp                                                  <= sp - to_unsigned(2, addr_width);
           when "0101" => -- DROP
-            -- Implement DROP logic
-            sp <= sp + to_unsigned(2, addr_width); -- Adiciona 2 à pilha
+            sp <= sp + to_unsigned(2, addr_width);
           when "0110" => -- DUP
-            -- Implement DUP logic
             stack(to_integer(sp) - 1 downto to_integer(sp)) <= stack(to_integer(sp) - 2 downto to_integer(sp) - 1);
-            sp                                              <= sp + to_unsigned(2, addr_width); -- Adiciona 2 à pilha
+            sp                                              <= sp + to_unsigned(2, addr_width);
           when "1110" => -- JMP
-            -- Implement JMP logic
             ip <= imm;
+            ip <= std_logic_vector(unsigned(ip) + 1);
+
           when "1111" => -- JEQ
-            -- Implement JEQ logic
             if op1 = op2 then
               ip <= imm;
             else
               ip <= std_logic_vector(unsigned(ip) + 1);
             end if;
-          when others =>
-            -- Implement logic for other opcodes
-        end case;
+            ip <= std_logic_vector(unsigned(ip) + 1);
 
-        -- Atualize ip para a próxima instrução
-        if opcode /= "1110" and opcode /= "1111" then -- Não é JMP ou JEQ
-          ip <= std_logic_vector(unsigned(ip) + 1); -- Adiciona 1 a ip
+          when "1000" => -- ADD
+            op1                                                          <= stack(to_integer(sp) - 1 downto to_integer(sp) - data_width);
+            op2                                                          <= stack(to_integer(sp) - 3 downto to_integer(sp) - data_width - 2);
+            op3                                                          <= (others => '0'); -- Clear op3
+            stack(to_integer(sp) - 1 downto to_integer(sp) - data_width) <= std_logic_vector(unsigned(op1) + unsigned(op2));
+            sp                                                           <= sp - to_unsigned(2, addr_width);
+
+          when "1001" => -- SUB
+            op1                                                          <= stack(to_integer(sp) - 1 downto to_integer(sp) - data_width);
+            op2                                                          <= stack(to_integer(sp) - 3 downto to_integer(sp) - data_width - 2);
+            op3                                                          <= (others => '0'); -- Clear op3
+            stack(to_integer(sp) - 1 downto to_integer(sp) - data_width) <= std_logic_vector(unsigned(op2) - unsigned(op1));
+            sp                                                           <= sp - to_unsigned(2, addr_width);
+
+          when "1010" => -- NAND
+            op1                                                          <= stack(to_integer(sp) - 1 downto to_integer(sp) - data_width);
+            op2                                                          <= stack(to_integer(sp) - 3 downto to_integer(sp) - data_width - 2);
+            op3                                                          <= (others => '0'); -- Clear op3
+            stack(to_integer(sp) - 1 downto to_integer(sp) - data_width) <= not (op1 and op2);
+            sp                                                           <= sp - to_unsigned(2, addr_width);
+
+          when "1011" => -- SLT
+            op1 <= stack(to_integer(sp) - 1 downto to_integer(sp) - data_width);
+            op2 <= stack(to_integer(sp) - 3 downto to_integer(sp) - data_width - 2);
+            op3 <= (others => '0'); -- Clear op3
+            if signed(op2) < signed(op1) then
+              stack(to_integer(sp) - 1 downto to_integer(sp) - data_width) <= (others => '1');
+            else
+              stack(to_integer(sp) - 1 downto to_integer(sp) - data_width) <= (others => '0');
+            end if;
+            sp <= sp - to_unsigned(2, addr_width);
+
+          when "1100" => -- SHL
+            op1                                                          <= stack(to_integer(sp) - 1 downto to_integer(sp) - data_width);
+            op2                                                          <= (others => '0'); -- Clear op2
+            op3                                                          <= (others => '0'); -- Clear op3
+            stack(to_integer(sp) - 1 downto to_integer(sp) - data_width) <= std_logic_vector(unsigned(stack(to_integer(sp) - 1 downto to_integer(sp) - data_width)) sll 1);
+            sp                                                           <= sp - to_unsigned(2, addr_width);
+
+          when "1101" => -- SHR
+            op1                                                          <= stack(to_integer(sp) - 1 downto to_integer(sp) - data_width);
+            op2                                                          <= (others => '0'); -- Clear op2
+            op3                                                          <= (others => '0'); -- Clear op3
+            stack(to_integer(sp) - 1 downto to_integer(sp) - data_width) <= std_logic_vector(unsigned(stack(to_integer(sp) - 1 downto to_integer(sp) - data_width)) srl 1);
+            sp                                                           <= sp - to_unsigned(2, addr_width);
+
+          when others =>
+        end case;
+        if opcode /= "1110" and opcode /= "1111" then
+          ip <= std_logic_vector(unsigned(ip) + 1);
         end if;
       end if;
     end if;
   end process;
+
 end architecture behavioral;
