@@ -88,6 +88,4 @@ begin
       codec_data_in    => open
     );
 
-  -- Add other signal assignments here if needed
-
 end architecture testbench;
