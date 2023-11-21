@@ -10,35 +10,35 @@ entity soc is
   );
   port
   (
-    clock   : in std_logic; -- Clock signal
-    started : in std_logic -- Start execution when '1'
+    clock   : in std_logic; -- Clock signal - Sinal de clock
+    started : in std_logic -- Start execution when '1' - Iniciar a execução quando '1'
   );
 end entity soc;
 
-architecture behavioral of soc is
+architecture behavioral of soc is -- Architecture declaration - Declaração da arquitetura
 
-  signal primem_data_read  : std_logic;
-  signal primem_data_write : std_logic;
-  signal primem_data_addr  : std_logic_vector(15 downto 0);
-  signal primem_data_in    : std_logic_vector(15 downto 0);
-  signal primem_data_out   : std_logic_vector(31 downto 0);
+  signal primem_data_read  : std_logic; -- Signal to read from primary memory - Sinal para ler da memória primária
+  signal primem_data_write : std_logic; -- Signal to write to primary memory - Sinal para escrever na memória primária
+  signal primem_data_addr  : std_logic_vector(15 downto 0); -- Address of primary memory - Endereço da memória primária
+  signal primem_data_in    : std_logic_vector(15 downto 0); -- Data to write to primary memory - Dado para escrever na memória primária
+  signal primem_data_out   : std_logic_vector(31 downto 0); -- Data read from primary memory - Dado lido da memória primária
 
-  signal secmem_data_read  : std_logic;
-  signal secmem_data_write : std_logic;
-  signal secmem_data_addr  : std_logic_vector(15 downto 0);
-  signal secmem_data_in    : std_logic_vector(15 downto 0);
-  signal secmem_data_out   : std_logic_vector(31 downto 0);
+  signal secmem_data_read  : std_logic; -- Signal to read from secondary memory - Sinal para ler da memória secundária
+  signal secmem_data_write : std_logic; -- Signal to write to secondary memory - Sinal para escrever na memória secundária
+  signal secmem_data_addr  : std_logic_vector(15 downto 0); -- Address of secondary memory - Endereço da memória secundária
+  signal secmem_data_in    : std_logic_vector(15 downto 0); -- Data to write to secondary memory - Dado para escrever na memória secundária
+  signal secmem_data_out   : std_logic_vector(31 downto 0); -- Data read from secondary memory - Dado lido da memória secundária
 
-  signal codec_interrupt : std_logic;
-  signal codec_read      : std_logic;
-  signal codec_write     : std_logic;
-  signal codec_valid     : std_logic;
-  signal codec_data_in   : std_logic_vector(7 downto 0);
-  signal codec_data_out  : std_logic_vector(7 downto 0);
+  signal codec_interrupt : std_logic; -- Interrupt signal - Sinal de interrupção
+  signal codec_read      : std_logic; -- Read signal - Sinal de leitura
+  signal codec_write     : std_logic; -- Write signal - Sinal de escrita
+  signal codec_valid     : std_logic; -- Valid signal - Sinal de validade
+  signal codec_data_in   : std_logic_vector(7 downto 0); -- Byte written to codec - Byte gravado no codec
+  signal codec_data_out  : std_logic_vector(7 downto 0); -- Byte read from codec - Byte lido do codec
 
 begin
 
-  primem : entity work.memory(behavioral)
+  primem : entity work.memory(behavioral) -- Primary memory - Memória primária
     generic
     map (
     addr_width => 16,
@@ -54,7 +54,7 @@ begin
       data_out   => primem_data_out
     );
 
-  secmem : entity work.memory(behavioral)
+  secmem : entity work.memory(behavioral) -- Secondary memory - Memória secundária
     generic
     map (
     addr_width => 16,
@@ -70,7 +70,7 @@ begin
     data_out   => secmem_data_out
     );
 
-  codec_inst : entity work.codec
+  codec_inst : entity work.codec -- Codec - Codec
 
     port
     map (
@@ -82,7 +82,7 @@ begin
     codec_data_out => codec_data_in
     );
 
-  cpu_inst : entity work.cpu
+  cpu_inst : entity work.cpu -- CPU - Port map da entidade cpu
     generic
     map (
     addr_width => 16,
